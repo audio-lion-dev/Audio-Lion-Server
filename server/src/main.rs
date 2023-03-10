@@ -1,31 +1,10 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-// imports
-use axum::{
-    async_trait,
-    extract::{FromRequestParts, Path},
-    http::{request::Parts, StatusCode},
-    response::Json,
-    response::{Html, IntoResponse, Response},
-    routing::get,
-    RequestPartsExt, Router,
-};
-use db::get_collection;
-use serde_json::Value;
-use std::{collections::HashMap, net::SocketAddr};
-
-use futures::stream::TryStreamExt;
+use axum::{routing::get, Router};
+use mongodb::bson::doc;
 use serde::{Deserialize, Serialize};
-
-use mongodb::{
-    bson::{self, doc},
-    Client, Collection,
-};
+use std::net::SocketAddr;
 
 use crate::{
-    crud::{create_api_report, get_current_date, get_global_statistics},
+    crud::{create_api_report, get_current_date, get_global_statistics, update_global_statistics},
     db::ReportType,
 };
 
@@ -41,7 +20,10 @@ struct User {
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/api/v1/global/stats", get(get_global_statistics));
+    let app = Router::new().route(
+        "/api/v1/global/stats/:admin_code",
+        get(get_global_statistics).post(update_global_statistics),
+    );
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 7983));
     println!("listening on {}", addr);

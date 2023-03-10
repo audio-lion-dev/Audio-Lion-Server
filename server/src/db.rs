@@ -1,10 +1,6 @@
-use axum::{http::StatusCode, response::IntoResponse, Json};
-use mongodb::{
-    bson::{self, doc},
-    Client, Collection,
-};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use axum::http::StatusCode;
+use mongodb::{bson::doc, Client, Collection};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 const MONGODB_URI: &str = "mongodb://localhost:27017";
 
@@ -30,7 +26,7 @@ pub async fn get_database(name: Option<String>) -> mongodb::Database {
 
 pub enum ValidCollections {
     Statistics,
-    Reports
+    Reports,
 }
 
 /// Get a collection from the database
@@ -45,14 +41,15 @@ pub async fn get_collection<T>(collection_type: ValidCollections) -> Collection<
     return collection;
 }
 
-#[derive(Debug, Deserialize, Serialize)]
 /// Global statistics for the app
 /// There will only be one document in the collection
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Statistics {
     pub online_users: u32,
     pub downloads: u32,
 }
 
+/// The different types of reports that can be created on the server
 #[derive(Debug, Deserialize, Serialize)]
 pub enum ReportType {
     Bug,
@@ -60,6 +57,7 @@ pub enum ReportType {
     Other,
 }
 
+/// A report that can be created on the server to help with debugging and tracking issues
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Report {
     /// The name of the Report
@@ -72,4 +70,34 @@ pub struct Report {
     pub date: String,
     /// The name of the function or file that created the report
     pub caller: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct IError {
+    pub status_code: StatusCodeWrapper,
+    pub error_message: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StatusCodeWrapper(pub StatusCode);
+
+impl Serialize for StatusCodeWrapper {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.as_u16().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for StatusCodeWrapper {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let code = u16::deserialize(deserializer)?;
+        Ok(StatusCodeWrapper(StatusCode::from_u16(code).map_err(
+            |_| serde::de::Error::custom(format!("Invalid status code: {}", code)),
+        )?))
+    }
 }
