@@ -11,6 +11,7 @@ use crate::{
 // modules
 mod crud;
 mod db;
+mod test;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct User {
@@ -41,7 +42,8 @@ async fn main() {
                 get_current_date(),
                 "main".to_string(),
             )
-            .await;
+            .await
+            .unwrap();
             std::process::exit(1);
         }
     }

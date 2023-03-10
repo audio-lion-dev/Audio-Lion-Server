@@ -50,14 +50,25 @@ pub async fn get_global_statistics(
                         return Ok(Json(default));
                     }
                     Err(e) => {
-                        create_api_report(
+                        match create_api_report(
                             ReportType::Error,
                             "Error getting global stats on the server.".to_string(),
                             e.to_string(),
                             get_current_date(),
                             "get_global_statistics".to_string(),
                         )
-                        .await;
+                        .await
+                        {
+                            Ok(_) => {}
+                            Err(e) => {
+                                return Err(Json(IError {
+                                    status_code: StatusCodeWrapper(
+                                        StatusCode::INTERNAL_SERVER_ERROR,
+                                    ),
+                                    error_message: e.to_string(),
+                                }));
+                            }
+                        }
                         return Err(Json(IError {
                             status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
                             error_message: e.to_string(),
@@ -67,14 +78,23 @@ pub async fn get_global_statistics(
             }
         },
         Err(e) => {
-            create_api_report(
+            match create_api_report(
                 ReportType::Error,
                 "Error getting global stats on the server.".to_string(),
                 e.to_string(),
                 get_current_date(),
                 "get_global_statistics".to_string(),
             )
-            .await;
+            .await
+            {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(Json(IError {
+                        status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
+                        error_message: e.to_string(),
+                    }));
+                }
+            }
             return Err(Json(IError {
                 status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
                 error_message: e.to_string(),
@@ -128,14 +148,25 @@ pub async fn update_global_statistics(
                         }
                     }
                     Err(e) => {
-                        create_api_report(
+                        match create_api_report(
                             ReportType::Error,
                             "Error creating global stats on the server.".to_string(),
                             e.to_string(),
                             get_current_date(),
                             "update_global_statistics".to_string(),
                         )
-                        .await;
+                        .await
+                        {
+                            Ok(_) => {}
+                            Err(e) => {
+                                return Err(Json(IError {
+                                    status_code: StatusCodeWrapper(
+                                        StatusCode::INTERNAL_SERVER_ERROR,
+                                    ),
+                                    error_message: e.to_string(),
+                                }));
+                            }
+                        }
                         return Err(Json(IError {
                             status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
                             error_message: e.to_string(),
@@ -145,14 +176,23 @@ pub async fn update_global_statistics(
             }
         },
         Err(e) => {
-            create_api_report(
+            match create_api_report(
                 ReportType::Error,
                 "Error getting global stats on the server.".to_string(),
                 e.to_string(),
                 get_current_date(),
                 "update_global_statistics".to_string(),
             )
-            .await;
+            .await
+            {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(Json(IError {
+                        status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
+                        error_message: e.to_string(),
+                    }));
+                }
+            }
             return Err(Json(IError {
                 status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
                 error_message: e.to_string(),
@@ -246,14 +286,23 @@ pub async fn update_global_statistics(
     match col.update_one(doc! {}, update, options).await {
         Ok(_) => Ok(StatusCode::OK),
         Err(e) => {
-            create_api_report(
+            match create_api_report(
                 ReportType::Error,
                 "Updating global stats on the server.".to_string(),
                 e.to_string(),
                 get_current_date(),
                 "update_global_statistics".to_string(),
             )
-            .await;
+            .await
+            {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(Json(IError {
+                        status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
+                        error_message: e.to_string(),
+                    }));
+                }
+            }
             Err(Json(IError {
                 status_code: StatusCodeWrapper(StatusCode::INTERNAL_SERVER_ERROR),
                 error_message: e.to_string(),
@@ -271,7 +320,7 @@ pub async fn create_api_report(
     message: String,
     date: String,
     caller: String,
-) {
+) -> Result<(), String> {
     let col = get_collection::<Report>(ValidCollections::Reports).await;
 
     let report = Report {
@@ -282,11 +331,7 @@ pub async fn create_api_report(
         caller,
     };
     match col.insert_one(report, None).await {
-        Ok(_) => {
-            println!("Inserted report");
-        }
-        Err(e) => {
-            eprintln!("Failed to insert report: {}", e);
-        }
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.to_string()),
     }
 }
