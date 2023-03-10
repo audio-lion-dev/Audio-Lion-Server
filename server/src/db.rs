@@ -4,6 +4,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 const MONGODB_URI: &str = "mongodb://localhost:27017";
 
+/// Creates a new client object
+/// 
+/// Returns a mongodb::Client
 async fn get_client() -> Client {
     let client = match Client::with_uri_str(MONGODB_URI).await {
         Ok(client) => {
@@ -15,6 +18,11 @@ async fn get_client() -> Client {
     return client;
 }
 
+/// Get the database from the client
+/// 
+/// If no name is provided it will default to "app" as the database name
+/// 
+/// Returns a mongodb::Database
 pub async fn get_database(name: Option<String>) -> mongodb::Database {
     let client = get_client().await;
     let db = match name {
@@ -72,12 +80,14 @@ pub struct Report {
     pub caller: String,
 }
 
+/// A custom error type that can be returned from the server
 #[derive(Debug, Deserialize, Serialize)]
 pub struct IError {
     pub status_code: StatusCodeWrapper,
     pub error_message: String,
 }
 
+/// A wrapper around the StatusCode enum to allow it to be serialized and deserialized
 #[derive(Debug, Clone, PartialEq)]
 pub struct StatusCodeWrapper(pub StatusCode);
 
